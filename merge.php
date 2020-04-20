@@ -1,13 +1,15 @@
 <?php
-$CAF_TAG = "LA.UM.7.1.r1-16600-sm8150.0";
+$CAF_TAG = trim($argv[1]);
 
 $DEFAULT_XML_PATH = ".repo/manifests/default.xml";
 $RELOADED_XML_PATH = ".repo/manifests/reloaded.xml";
 
 $exceptions = [
     'android_manifest',
+    'android_hardware_lineage_interfaces',
+    'android_hardware_qcom_bt',
     'android_packages_apps_ReloadedOTA',
-    'android_vendor_reloaded'
+    'android_vendor_reloaded',
 ];
 
 function getCAFURL($default_xml, $path){
@@ -39,7 +41,7 @@ foreach($reloaded_xml->project as $project){
     echo $progress . "\n\n";
     if($unstaged == ""){
         echo "Merge Success on $path \n\n";
-        shell_exec("cd $path && git push git@github.com:Reloaded-CAF/$name.git HEAD:pie");
+        shell_exec("cd $path && git push git@github.com:ReloadedOS/$name.git HEAD:q");
     }else{
         echo "Merge Conflict on $path \n\n";
     }
