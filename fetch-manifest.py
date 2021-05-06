@@ -4,17 +4,31 @@ import requests
 import sys
 from xml.etree import ElementTree
 
+tag = {
+    'system': 'LA.QSSI.11.0.r1-11600-qssi.0',
+    'vendor': 'LA.UM.9.14.r1-16100-LAHAINA.0'
+}
 
-def get_manifest(tag):
-    url = "https://source.codeaurora.org/quic/la/platform/manifest/plain/default_{0}.xml?h={0}".format(tag)
+clone_depth = [
+    'device/amlogic/yukawa-kernel',
+    'platform/cts',
+    'platform/external/autotest',
+    'platform/external/dokka',
+    'platform/external/icu',
+    'platform/frameworks/layoutlib',
+    'platform/test/mlts/models',
+    'kernel/msm-5.4'
+]
+
+def get_manifest(type):
+    url = "https://source.codeaurora.org/quic/la/la/{0}/manifest/plain/default_{1}.xml?h={1}".format(type, tag[type])
     res = requests.get(url)
-
-    with open('{0}.xml'.format(tag), 'wb') as f:
+        
+    with open('{0}_{1}.xml'.format(type, tag[type]), 'wb') as f:
         f.write(res.content)
 
-
-def parse_manifest(tag):
-    tree = ElementTree.parse("{0}.xml".format(tag))
+def parse_manifest(type):
+    tree = ElementTree.parse("{0}_{1}.xml".format(type, tag[type]))
     root = tree.getroot()
 
     for item in root.findall('./project'):
@@ -23,17 +37,32 @@ def parse_manifest(tag):
         if 'groups' in item.attrib.keys():
             item.attrib.pop('groups')
 
-    tree.write("{0}.xml".format(tag))
+        item.attrib['remote'] = type
+
+        if 'clone-depth' in item.attrib.keys():
+            item.attrib.pop('clone-depth')
+            item.attrib['clone-depth'] = '1'
+
+        if item.attrib['name'] in clone_depth:
+            item.attrib['clone-depth'] = '1'
+
+    for item in root.findall('./remote'):
+        root.remove(item)
+
+    for item in root.findall('./default'):
+        root.remove(item);
+
+    for item in root.findall('./refs'):
+        root.remove(item);
+
+    tree.write("{0}_{1}.xml".format(type, tag[type]), encoding='utf-8', xml_declaration=True)
 
 
 def main():
-    if len(sys.argv) < 2:
-        print("Usage: python3 fetch-manifest.py <tag>")
-        sys.exit()
-    else:
-        tag = sys.argv[1]
-        get_manifest(tag)
-        parse_manifest(tag)
+    get_manifest('system')
+    parse_manifest('system')
+    get_manifest('vendor')
+    parse_manifest('vendor')
 
 if __name__ == '__main__':
     main()
